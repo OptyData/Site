@@ -4,7 +4,7 @@ if(customElements.get("opty-data-sources"))return;
 var SRC=(document.currentScript&&document.currentScript.src)||"https://data.optydata.com/data/opty-data-sources.js";
 var STATUS_URL=new URL("../status/status.json",SRC).href, BOARD_URL=new URL("../data.json",SRC).href;
 var CSS=`
-:host{display:block;--bg:#f4f7fb;--card:#fff;--ink:#0e1b2c;--soft:#5d6b7d;--line:#e3e9f1;--blue:#2f6bff;--g:#16a457;--g-soft:#e3f6ec;--r:#d93a2c;--r-soft:#fde7e5;--gr:#9aa6b5;--gr-soft:#eef1f5;
+:host{display:block;--bg:#f4f7fb;--card:#fff;--ink:#0e1b2c;--soft:#5d6b7d;--line:#e3e9f1;--blue:#2f6bff;--g:#16a457;--g-soft:#e3f6ec;--r:#d93a2c;--r-soft:#fde7e5;--y:#d99a00;--y-soft:#fff4d6;--gr:#9aa6b5;--gr-soft:#eef1f5;
 --head:"Bricolage Grotesque","DM Sans",system-ui,sans-serif;--body:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light;-webkit-text-size-adjust:100%}
 *{box-sizing:border-box}
 .shell{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
@@ -16,9 +16,9 @@ p{margin:0}a{color:var(--blue);text-decoration:none;font-weight:700}a:hover{text
 .sum{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
 .big{font-family:var(--head);font-size:30px;font-weight:800}
 .pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;border-radius:999px;padding:4px 11px;width:fit-content}
-.pill.g{background:var(--g-soft);color:var(--g)}.pill.r{background:var(--r-soft);color:var(--r)}.pill.x{background:var(--gr-soft);color:var(--soft)}
+.pill.g{background:var(--g-soft);color:var(--g)}.pill.y{background:var(--y-soft);color:#9a6b00}.pill.r{background:var(--r-soft);color:var(--r)}.pill.x{background:var(--gr-soft);color:var(--soft)}
 .dot{width:14px;height:14px;border-radius:50%;flex:none;display:inline-block;box-shadow:inset 0 -2px 0 rgba(0,0,0,.12)}
-.dot.g{background:var(--g)}.dot.r{background:var(--r)}.dot.x{background:var(--gr)}
+.dot.g{background:var(--g)}.dot.y{background:var(--y)}.dot.r{background:var(--r)}.dot.x{background:var(--gr)}
 .lights{display:grid;gap:0}
 .lrow{display:grid;grid-template-columns:auto minmax(0,1.3fr) minmax(0,1fr) minmax(0,1.4fr) auto;gap:10px 14px;align-items:center;padding:10px 2px;border-top:1px solid var(--line)}
 .lrow:first-child{border-top:0}
@@ -77,16 +77,16 @@ function render(R,S,B){
  /* watchdog: if the hourly board itself is over 3 hours old, the updater has stopped reporting */
  var bu=B&&B.updated?new Date(B.updated.replace(" ","T")+":00-05:00"):null, dead=!bu||(Date.now()-bu)>3*3600e3;
  function st(id){if(id==="kpilist")return{ok:null,note:"Checked by hand when Cboe updates its list"};var s=by[id];if(!s)return{ok:null,note:"Status not available yet"};
-  if(dead&&id!=="calendar")return{ok:false,last:s.last,note:"Updates have stopped reporting; numbers may be out of date"};return s}
- function cls(s){return s.ok===true?"g":s.ok===false?"r":"x"}
- var rows=[],seen={},g=0,r=0;
- CAT.forEach(function(c){var key=c.id+"|"+c.pg;if(seen[key])return;seen[key]=1;var s=st(c.id);if(s.ok===true)g++;else if(s.ok===false)r++;
-  rows.push('<div class="lrow" role="row"><span class="dot '+cls(s)+'" role="img" aria-label="'+(s.ok===true?"Green":s.ok===false?"Red":"No light")+'"></span><span><b>'+c.who.replace(/<[^>]+>/g,"")+'</b><span class="k" style="display:block">'+esc(c.gives)+'</span></span><span class="k pg">'+P[c.pg].e+" "+P[c.pg].n+'</span><span class="k nt">'+esc(s.note||"")+'</span><span class="t">'+(s.last?fmt(s.last).split(" \u00b7 ")[1]:"")+'</span></div>')});
- var tot=g+r, allg=r===0&&tot>0;
- var html='<header style="display:grid;gap:8px"><h1>\ud83d\udef0\ufe0f Data Sources</h1><p class="lead">Every number on this site comes from the outside services below. Each one is checked every 15 minutes: \ud83d\udfe2 means its last update arrived on schedule and looked complete; \ud83d\udd34 means it failed, is late, or the numbers may be wrong.</p></header>'
- +'<section class="card"><div class="sum"><span class="big">'+(allg?"\ud83d\udfe2 All clear":"\ud83d\udd34 "+r+" need attention")+'</span><span class="pill '+(allg?"g":"r")+'">'+g+' of '+tot+' sources green</span></div>'
+  if(dead&&id!=="calendar")return{state:"y",last:s.last,note:"Late: updates have stopped reporting; numbers may be out of date"};if(!s.state)s.state=s.ok?"g":"r";return s}
+ function cls(s){return s.state||"x"}
+ var rows=[],seen={},g=0,r=0,y=0;
+ CAT.forEach(function(c){var key=c.id+"|"+c.pg;if(seen[key])return;seen[key]=1;var s=st(c.id);if(s.state==="g")g++;else if(s.state==="r")r++;else if(s.state==="y")y++;
+  rows.push('<div class="lrow" role="row"><span class="dot '+cls(s)+'" role="img" aria-label="'+({g:"Green",y:"Yellow",r:"Red"}[s.state]||"No light")+'"></span><span><b>'+c.who.replace(/<[^>]+>/g,"")+'</b><span class="k" style="display:block">'+esc(c.gives)+'</span></span><span class="k pg">'+P[c.pg].e+" "+P[c.pg].n+'</span><span class="k nt">'+esc(s.note||"")+'</span><span class="t">'+(s.last?fmt(s.last).split(" \u00b7 ")[1]:"")+'</span></div>')});
+ var tot=g+r+y, allg=r===0&&y===0&&tot>0;
+ var html='<header style="display:grid;gap:8px"><h1>\ud83d\udef0\ufe0f Data Sources</h1><p class="lead">Every number on this site comes from the outside services below. Each one is checked every 15 minutes: \ud83d\udfe2 means its last update arrived on schedule and looked complete; \ud83d\udfe1 means it is running late; \ud83d\udd34 means it failed or the numbers may be wrong.</p></header>'
+ +'<section class="card"><div class="sum"><span class="big">'+(allg?"\ud83d\udfe2 All clear":r?"\ud83d\udd34 "+r+" need attention":"\ud83d\udfe1 "+y+" running late")+'</span><span class="pill '+(allg?"g":r?"r":"y")+'">'+g+' of '+tot+' sources green'+(y?' \u00b7 '+y+' late':'')+'</span></div>'
  +'<div class="lights" role="table" aria-label="Data source stoplight"><div class="lrow lhead" role="row"><span></span><span>Source</span><span class="pg">Page</span><span class="nt">Status</span><span>Last update</span></div>'+rows.join("")+'</div>'
- +'<div class="legend"><span><i class="dot g"></i>Last update worked</span><span><i class="dot r"></i>Failed, late, or may be wrong</span><span><i class="dot x"></i>Updated by hand / no automatic check</span></div></section>';
+ +'<div class="legend"><span><i class="dot g"></i>Last update worked</span><span><i class="dot y"></i>Late: the next update has not arrived yet</span><span><i class="dot r"></i>Failed, or the numbers may be wrong</span><span><i class="dot x"></i>Updated by hand / no automatic check</span></div></section>';
  ["vibes","ins","kpi","cal"].forEach(function(pk){var p=P[pk];
   html+='<section class="page"><div class="ph"><h2>'+p.e+" "+p.n+'</h2>'+(p.href?'<a href="'+p.href+'" target="_top">Open '+p.n+' \u2192</a>':"")+'</div><div class="grid">';
   CAT.filter(function(c){return c.pg===pk}).forEach(function(c){var s=st(c.id),k=cls(s);
