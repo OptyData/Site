@@ -116,7 +116,7 @@ const todayET = () => new Date().toLocaleDateString("en-CA", {timeZone: "America
 const daysTo = iso => Math.max(0, Math.round((D(iso) - D(todayET())) / 864e5));
 const usd = v => "$" + Math.round(v).toLocaleString();
 const when = iso => { const t = new Date(iso); return t.toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York"}) + " at " + t.toLocaleTimeString(undefined, {hour: "numeric", minute: "2-digit", timeZone: "America/New_York"}) + " ET"; };
-const winText = t => t.kind === "iron_condor" ? `between $${t.lo}\u2013$${t.hi}` : t.kind === "call_debit" ? `above $${t.lc}` : `above $${t.lo}`;
+const winText = t => t.kind === "iron_condor" ? `between $${t.lo}\u2013$${t.hi}` : t.kind === "call_debit" ? `above $${beOf(t).toFixed(2)} (break-even)` : `above $${t.lo}`;
 const shape = t => t.kind === "iron_condor" ? "\ud83e\udd85 Range play" : t.kind === "call_debit" ? "\ud83d\ude80 Upside play" : "\ud83d\udc02 Stay-above play";
 let filter = "all", all = [];
 const NUM = ["1\ufe0f\u20e3", "2\ufe0f\u20e3", "3\ufe0f\u20e3", "4\ufe0f\u20e3"];
@@ -124,6 +124,9 @@ const longDate = iso => D(iso).toLocaleDateString(undefined, {month: "short", da
 const legLine = l => `${l.side === "sell" ? "\ud83d\udd3b Short" : "\ud83d\udd3a Long"} ${l.strike} ${l.type === "put" ? "Put" : "Call"} <span class="lp">$${l.px.toFixed(2)}</span>`;
 const netLine = t => `\ud83e\uddee Net $${t.limit.toFixed(2)} ${t.debit ? "debit" : "credit"} \u00b7 1 contract each`;
 const legsHTML = t => `<div class="legs">${t.legs.map(l => `<span>${legLine(l)}</span>`).join("")}<span class="net">${netLine(t)}</span></div>`;
+const dW = t => Math.abs((t.sc ?? 0) - (t.lc ?? 0)) || 5;
+const beOf = t => t.lc + t.limit;
+const maxP = t => Math.max(0, Math.round((dW(t) - t.limit) * 100));
 const strategyName = t => t.kind === "iron_condor" ? "Iron condor" : t.kind === "call_debit" ? "Call debit spread" : "Put credit spread";
 /* hourly: same plays, newest prices and odds (from the server's :35 re-pricing) */
 const liveHR = () => HR && DATA && HR.date === DATA.date && Array.isArray(HR.plays) ? HR : null;
@@ -147,6 +150,7 @@ function live(t, H) {
   o.legs = t.legs.map((l, i) => ({...l, px: p.legs_now[i]}));
   o.limit = Math.abs(p.spread_now);
   if (!t.debit) { const W = t.collect + t.risk; o.collect = Math.round(o.limit * 100); o.risk = Math.max(0, W - o.collect); }
+  else { o.risk = Math.round(o.limit * 100); o.collect = -o.risk; }
   return o;
 }
 
@@ -188,7 +192,7 @@ function render() {
         ${sigHTML(t)}
         <p style="font-size:16px">\ud83d\udfe9 Profit zone: ${t.tk} ${winText(t)} on ${nice(w.expiry)}</p>
         ${legsHTML(t)}
-        <div class="stats num"><span><span class="k">\ud83d\udcb5 Premium</span><b>${usd(t.collect)}</b></span><span><span class="k">\u26a0\ufe0f Risk</span><b>${usd(t.risk)}</b></span>${t.odds ? `<span><span class="k">\ud83c\udfaf Probability</span><b>${t.odds}%</b></span>` : ""}<span><span class="k">\u23f3 Left</span><b>${daysTo(w.expiry)}d</b></span></div>`;
+        <div class="stats num">${t.debit ? `<span><span class="k">\ud83d\udcb8 Cost</span><b>${usd(t.risk)}</b></span><span><span class="k">\ud83d\udcb0 Max profit</span><b>${usd(maxP(t))}</b></span>` : `<span><span class="k">\ud83d\udcb5 Premium</span><b>${usd(t.collect)}</b></span><span><span class="k">\u26a0\ufe0f Risk</span><b>${usd(t.risk)}</b></span>`}${t.odds ? `<span><span class="k">\ud83c\udfaf Probability</span><b>${t.odds}%</b></span>` : ""}<span><span class="k">\u23f3 Left</span><b>${daysTo(w.expiry)}d</b></span></div>`;
     }
   } else { $("friday").hidden = true; $("mood").closest("section").hidden = true; }
   renderBoard();
@@ -221,7 +225,7 @@ function zone(t) {
   const X = v => ((v - lo) / (hi - lo) * 100).toFixed(2) + "%";
   let ok = "", labs = "";
   if (t.kind === "iron_condor") { ok = `<span class="ok" style="left:${X(t.lo)};width:calc(${X(t.hi)} - ${X(t.lo)})"></span>`; labs = `<span class="lab" style="left:${X(t.lo)}">$${t.lo}</span><span class="lab" style="left:${X(t.hi)}">$${t.hi}</span>`; }
-  else if (t.kind === "call_debit") { ok = `<span class="ok" style="left:${X(t.lc)};right:0"></span>`; labs = `<span class="lab" style="left:${X(t.lc)}">$${t.lc}</span>`; }
+  else if (t.kind === "call_debit") { const be = beOf(t); ok = `<span class="ok" style="left:${X(be)};right:0"></span>`; labs = `<span class="lab" style="left:${X(be)}">$${be.toFixed(2)}</span>`; }
   else { ok = `<span class="ok" style="left:${X(t.lo)};right:0"></span>`; labs = `<span class="lab" style="left:${X(t.lo)}">$${t.lo}</span>`; }
   return `<div class="zone" aria-label="Win zone"><span class="rail"></span>${ok}<span class="now" style="left:${X(p)}">now ${p.toFixed(0)}<i>\ud83d\udccd</i></span>${labs}</div>`;
 }
@@ -229,7 +233,7 @@ function open(id, opener) {
   const t = all.find(x => x.id === id); if (!t) return;
   const total = Math.max(1, Math.round((D(t.expiry) - D(t.start)) / 864e5)), left = daysTo(t.expiry);
   const room = t.kind === "iron_condor" ? `\ud83d\udccf It can drop ${t.roomDown}% or rise ${t.roomUp}% and still win.`
-    : t.kind === "call_debit" ? `\ud83d\ude80 It needs ${t.tk} to rise this week.` : `\ud83d\udccf ${t.tk} can drop ${t.roomDown}% and this still wins.`;
+    : t.kind === "call_debit" ? `\ud83d\ude80 ${t.tk} needs to rise ${Math.max(0, (beOf(t) / t.price - 1) * 100).toFixed(1)}% to $${beOf(t).toFixed(2)} to break even, and reach $${t.sc} for the full ${usd(maxP(t))}. At $${t.lc} or below you lose the ${usd(t.risk)} you paid. \ud83c\udfaf The Friday Playbook does not estimate odds for debit spreads.` : `\ud83d\udccf ${t.tk} can drop ${t.roomDown}% and this still wins.`;
   $("sbody").innerHTML = `<div style="display:grid;gap:12px">
     <span class="tag" style="background:${LV[t.lv].s};color:${LV[t.lv].c}">${LV[t.lv].e} ${LV[t.lv].n}${t.rank ? ` \u00b7 \u2b50 Top ${t.rank}` : ""}</span>
     <h2 id="sTitle">${t.tk} ${shape(t)}</h2>
@@ -238,9 +242,11 @@ function open(id, opener) {
     ${zone(t)}
     <p style="color:var(--soft)">\ud83d\udfe9 green = winning zone \u00b7 \ud83d\udfe5 red = losing zone</p>
     <div class="bigstats num">
-      <div><b>${usd(t.collect)}</b><span>\ud83d\udcb5 premium</span></div>
+      ${t.debit ? `<div><b>${usd(t.risk)}</b><span>\ud83d\udcb8 cost (max loss)</span></div>
+      <div><b>${usd(maxP(t))}</b><span>\ud83d\udcb0 max profit</span></div>
+      <div><b>$${beOf(t).toFixed(2)}</b><span>\ud83d\udccd break-even</span></div>` : `<div><b>${usd(t.collect)}</b><span>\ud83d\udcb5 premium</span></div>
       <div><b>${usd(t.risk)}</b><span>\u26a0\ufe0f max risk</span></div>
-      <div><b>${t.odds ? t.odds + "%" : "\u2014"}</b><span>\ud83c\udfaf probability</span></div>
+      <div><b>${t.odds ? t.odds + "%" : "\u2014"}</b><span>\ud83c\udfaf probability</span></div>`}
     </div>
     <p>${room}</p>
     <h3 style="font-size:18px">\ud83d\udcc4 The contracts</h3>
