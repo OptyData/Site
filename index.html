@@ -3,12 +3,239 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Market Vibes</title>
-<meta name="description" content="Market Vibes: currencies, crypto, commodities, index leaders and the biggest ETFs, each scored 0-100 every hour with an emoji.">
-<style>body{margin:0;background:#F2F4F7}</style>
+<title>Opty Data</title>
+<meta name="description" content="Opty Data: the market's mood, option insurance prices, earnings track records and market hours, updated automatically every hour.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎛️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#0e1b2c;--soft:#5d6b7d;--line:#e3e9f1;--blue:#2f6bff;--g:#16a457;--g-soft:#e3f6ec;--y:#c98a00;--y-soft:#fff4d6;--r:#d93a2c;--r-soft:#fde7e5;--cold:#2f6bff;--mid:#a3abba;--hot:#f2542d;
+--head:"Bricolage Grotesque","DM Sans",system-ui,sans-serif;--body:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.5 var(--body)}
+a{color:inherit}
+.wrap{max-width:1160px;margin:0 auto;padding:0 16px}
+h1,h2,h3{font-family:var(--head);letter-spacing:-.025em;margin:0}
+.hero{background:radial-gradient(1200px 400px at 85% -10%,rgba(47,107,255,.16),transparent 60%),radial-gradient(800px 300px at 0% 0%,rgba(242,84,45,.10),transparent 60%);border-bottom:1px solid var(--line)}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:end;padding-top:44px;padding-bottom:34px}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--blue)}
+h1{font-size:clamp(34px,6vw,58px);font-weight:800;line-height:1.02;margin-top:10px;text-wrap:balance}
+.lead{color:var(--soft);font-size:17px;max-width:56ch;margin:14px 0 0}
+.pulse{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;display:grid;gap:12px;box-shadow:0 12px 32px rgba(14,27,44,.06)}
+.pulse-top{display:flex;align-items:center;gap:14px}
+.big-emo{font-size:46px;line-height:1}
+.pulse-top b{font:800 40px/1 var(--head);letter-spacing:-.03em}
+.pulse-top small{display:block;color:var(--soft);font-size:13px;margin-top:4px}
+.bar{position:relative;height:10px;border-radius:999px;background:linear-gradient(90deg,var(--cold),var(--mid),var(--hot))}
+.bar i{position:absolute;top:-4px;width:4px;height:18px;border-radius:3px;background:var(--ink);transform:translateX(-50%)}
+.mkt{display:flex;flex-wrap:wrap;gap:6px}
+.mk-p{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;border-radius:999px;padding:4px 10px;background:var(--bg)}
+.mk-p i{font-style:normal;font-size:10px}
+.mk-open{background:var(--g-soft);color:#0e6b3a}.mk-limited{background:var(--y-soft);color:#7a5600}.mk-closed{background:var(--r-soft);color:#9b2419}
+.upd{font-size:12.5px;color:var(--soft)}
+main .wrap{padding-top:30px;padding-bottom:40px;display:grid;gap:26px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sec-h h2{font-size:24px;font-weight:800}
+.sec-h p{color:var(--soft);margin:0;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+.card{grid-column:span 2;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;text-decoration:none;transition:transform .15s,box-shadow .15s,border-color .15s;min-width:0}
+.card.wide{grid-column:span 3}
+.card:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(14,27,44,.09);border-color:#cfd9e6}
+.card:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.card-h{display:flex;align-items:center;gap:10px}
+.card-h .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:20px;background:var(--bg);flex:none}
+.card-h h3{font-size:19px;font-weight:800}
+.card-h span{display:block;font-size:12.5px;color:var(--soft)}
+.stat{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.stat b{font:800 32px/1 var(--head);letter-spacing:-.03em}
+.stat em{font-style:normal;font-size:13px;font-weight:700;border-radius:999px;padding:3px 9px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12.5px;background:var(--bg);border-radius:999px;padding:4px 9px;white-space:nowrap}
+.line{font-size:14px;color:var(--soft);margin:0}
+.line b{color:var(--ink)}
+.go{margin-top:auto;font-size:13.5px;font-weight:700;color:var(--blue)}
+.g{background:var(--g-soft);color:#0e6b3a}.y{background:var(--y-soft);color:#7a5600}.r{background:var(--r-soft);color:#9b2419}
+.dots{display:flex;gap:5px;flex-wrap:wrap}.dots i{width:14px;height:14px;border-radius:50%;display:inline-block}
+.dots .dg{background:var(--g)}.dots .dy{background:var(--y)}.dots .dr{background:var(--r)}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.how div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.how b{display:block;font:800 16px var(--head);margin-bottom:4px}
+.how p{margin:0;color:var(--soft);font-size:14px}
+.scale{display:flex;gap:6px;flex-wrap:wrap;font-size:13px}
+.scale span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+footer{border-top:1px solid var(--line);color:var(--soft);font-size:12.5px}
+footer .wrap{padding-top:18px;padding-bottom:28px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sk{color:transparent;background:linear-gradient(90deg,#eef2f7,#e3e9f1,#eef2f7);border-radius:8px}
+@media (max-width:960px){.hero .wrap{grid-template-columns:1fr}.card,.card.wide{grid-column:span 3}.how{grid-template-columns:1fr}}
+@media (max-width:640px){.card,.card.wide{grid-column:span 6}.hero .wrap{padding-top:28px}}
+@media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
+</style>
 </head>
 <body>
-<opty-top-tens></opty-top-tens>
-<script src="opty-top-tens.js"></script>
+<script src="/nav.js"></script>
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <div class="kicker">Opty Data · live market reads</div>
+      <h1>The market's mood, in one glance.</h1>
+      <p class="lead">Hourly vibe scores for 70 assets, what option "insurance" costs today, earnings track records and market hours. Everything updates on its own, and every source is checked every 15 minutes.</p>
+    </div>
+    <div class="pulse" aria-live="polite">
+      <div class="pulse-top"><span class="big-emo" id="hEmo">…</span><div><b id="hScore">–</b><small id="hLabel">Overall market vibe</small></div></div>
+      <div class="bar" aria-hidden="true"><i id="hPin" style="left:50%"></i></div>
+      <div class="mkt" id="mkt"></div>
+      <div class="upd" id="hUpd">Loading the latest numbers…</div>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    <section>
+      <div class="sec-h"><h2>Today on Opty Data</h2><p>Tap a card to open the full page.</p></div>
+      <div class="grid" style="margin-top:14px">
+        <a class="card wide" href="/vibes/">
+          <div class="card-h"><span class="ic">🎛️</span><div><h3>Market Vibes</h3><span>Currencies, crypto, commodities, index leaders, ETF giants</span></div></div>
+          <div class="stat"><b id="vScore" class="sk">00</b><em id="vTier"></em></div>
+          <div class="chips" id="vDesks"></div>
+          <p class="line" id="vMove"></p>
+          <span class="go">Open Market Vibes →</span>
+        </a>
+        <a class="card wide" href="/spread-desk/">
+          <div class="card-h"><span class="ic">🧾</span><div><h3>Index Insurance</h3><span>VIX, monthly spreads on SPY, QQQ and DIA, Friday Play</span></div></div>
+          <div class="stat"><b id="iVix" class="sk">00.0</b><em id="iVixL"></em></div>
+          <p class="line" id="iPlay"></p>
+          <p class="line" id="iWeek"></p>
+          <span class="go">Open Index Insurance →</span>
+        </a>
+        <a class="card" href="/kpi/">
+          <div class="card-h"><span class="ic">📊</span><div><h3>KPI Tracker</h3><span>IV rank and earnings records, 13 leaders</span></div></div>
+          <div class="chips" id="kMix"></div>
+          <p class="line" id="kNext"></p>
+          <span class="go">Open KPI Tracker →</span>
+        </a>
+        <a class="card" href="/calendar/">
+          <div class="card-h"><span class="ic">🗓️</span><div><h3>Market Calendar</h3><span>Closures, early closes, Fed dates</span></div></div>
+          <p class="line" id="cClose"></p>
+          <p class="line" id="cFed"></p>
+          <span class="go">Open the Calendar →</span>
+        </a>
+        <a class="card" href="/data/">
+          <div class="card-h"><span class="ic">🛰️</span><div><h3>Data Sources</h3><span>Where every number comes from</span></div></div>
+          <div class="stat"><b id="dCount" class="sk">00/00</b><em id="dWord"></em></div>
+          <div class="dots" id="dDots" aria-hidden="true"></div>
+          <span class="go">Open Data Sources →</span>
+        </a>
+      </div>
+    </section>
+    <section>
+      <div class="sec-h"><h2>How to read it</h2></div>
+      <div class="how" style="margin-top:14px">
+        <div><b>🎛️ Vibe scores</b><p>Every asset gets a 0–100 score each hour from its recent moves. Above 50 is warming up, below 50 is cooling off.</p></div>
+        <div><b>🧾 Market insurance</b><p>Options work like insurance on prices. When the VIX and IV rank are high, insurance is expensive; when they're low, it's cheap.</p></div>
+        <div><b>🚀 Earnings emoji</b><p>Built from each company's last four quarters: 🚀 beat every time by 5%+, ⚖️ mostly in line, ⚠️ missed recently.</p></div>
+      </div>
+      <div class="scale" style="margin-top:12px" aria-label="Vibe scale"><span>🚀 85+ Rocket</span><span>🔥 70 Hot</span><span>😎 57 Warming up</span><span>😐 44 Flat</span><span>🥶 31 Cooling</span><span>📉 16 Sliding</span><span>🧊 0 Frozen</span></div>
+    </section>
+  </div>
+</main>
+<footer><div class="wrap"><span>© Opty Data. For information and education only. Not investment advice. Prices may be delayed.</span><span><a href="/data/">Data sources and status</a></span></div></footer>
+<script>
+/* ===== Market open/closed stoplight. Calendars: NYSE (2026-27), SIFMA bonds (2026 + Jan 1 2027; rest of 2027 expected) ===== */
+const MKCAL={
+ stockClosed:{"2026-01-01":"New Year's Day","2026-01-19":"Martin Luther King Jr. Day","2026-02-16":"Presidents Day","2026-04-03":"Good Friday","2026-05-25":"Memorial Day","2026-06-19":"Juneteenth","2026-07-03":"Independence Day (observed)","2026-09-07":"Labor Day","2026-11-26":"Thanksgiving","2026-12-25":"Christmas",
+  "2027-01-01":"New Year's Day","2027-01-18":"Martin Luther King Jr. Day","2027-02-15":"Presidents Day","2027-03-26":"Good Friday","2027-05-31":"Memorial Day","2027-06-18":"Juneteenth (observed)","2027-07-05":"Independence Day (observed)","2027-09-06":"Labor Day","2027-11-25":"Thanksgiving","2027-12-24":"Christmas (observed)"},
+ stockEarly:{"2026-11-27":"13:00","2026-12-24":"13:00","2027-11-26":"13:00"},
+ bondClosed:{"2026-01-01":"New Year's Day","2026-01-19":"Martin Luther King Jr. Day","2026-02-16":"Presidents Day","2026-05-25":"Memorial Day","2026-06-19":"Juneteenth","2026-07-03":"Independence Day (observed)","2026-09-07":"Labor Day","2026-10-12":"Columbus Day","2026-11-11":"Veterans Day","2026-11-26":"Thanksgiving","2026-12-25":"Christmas","2027-01-01":"New Year's Day",
+  "2027-01-18":"Martin Luther King Jr. Day*","2027-02-15":"Presidents Day*","2027-05-31":"Memorial Day*","2027-06-18":"Juneteenth*","2027-07-05":"Independence Day*","2027-09-06":"Labor Day*","2027-10-11":"Columbus Day*","2027-11-11":"Veterans Day*","2027-11-25":"Thanksgiving*","2027-12-24":"Christmas*"},
+ bondEarly:{"2026-04-03":"12:00","2026-05-22":"14:00","2026-07-02":"14:00","2026-11-27":"14:00","2026-12-24":"14:00","2026-12-31":"14:00"}};
+function etNow(d){const p=Object.fromEntries(new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",weekday:"short",hour12:false}).formatToParts(d||new Date()).map(x=>[x.type,x.value]));
+  const h=+p.hour%24;return{iso:`${p.year}-${p.month}-${p.day}`,wd:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].indexOf(p.weekday),min:h*60+(+p.minute)}}
+const hm=s=>{const[a,b]=s.split(":").map(Number);return a*60+b};
+const fmtHM=m=>{const h=Math.floor(m/60),mm=m%60;return`${(h+11)%12+1}${mm?":"+String(mm).padStart(2,"0"):""} ${h<12?"AM":"PM"}`};
+function marketStatus(d){const t=etNow(d),wk=t.wd===0||t.wd===6,m=t.min,out=[];
+  // stocks
+  {let s="closed",why="";const hol=MKCAL.stockClosed[t.iso],early=MKCAL.stockEarly[t.iso],close=early?hm(early):960,ahEnd=early?1020:1200;
+   if(wk)why="Weekend";else if(hol)why=hol;
+   else if(m>=570&&m<close){s="open";why=early?`Open · early close ${fmtHM(close)}`:"Open until 4 PM"}
+   else if(m>=240&&m<570){s="limited";why="Pre-market · opens 9:30 AM"}
+   else if(m>=close&&m<ahEnd){s="limited";why=`After hours until ${fmtHM(ahEnd)}`}
+   else why=m<240?"Closed · pre-market at 4 AM":"Closed for the night";
+   out.push({id:"stocks",e:"📈",n:"Stocks",s,why})}
+  // bonds (SIFMA recommended hours, about 8 AM to 5 PM ET)
+  {let s="closed",why="";const hol=MKCAL.bondClosed[t.iso],early=MKCAL.bondEarly[t.iso],close=early?hm(early):1020;
+   if(wk)why="Weekend";else if(hol)why=hol.replace("*","")+(hol.endsWith("*")?" (expected)":"");
+   else if(m>=480&&m<close){s="open";why=early?`Open · early close ${fmtHM(close)}`:"Open until 5 PM"}
+   else{s="limited";why=m<480?"Overnight trading · main session 8 AM":"Overnight trading · thin"}
+   out.push({id:"bonds",e:"🏦",n:"Bonds",s,why})}
+  // futures (CME: Sun 6 PM to Fri 5 PM, daily break 5 to 6 PM)
+  {let s="open",why="Open nearly 24 hours";const hol=MKCAL.stockClosed[t.iso];
+   if(t.wd===6||(t.wd===0&&m<1080)||(t.wd===5&&m>=1020)){s="closed";why=t.wd===0?"Opens 6 PM Sunday":"Weekend · opens 6 PM Sunday"}
+   else if(m>=1020&&m<1080){s="closed";why="Daily break · back at 6 PM"}
+   else if(hol){s="limited";why=`${hol}: holiday hours`}
+   out.push({id:"futures",e:"🛢️",n:"Futures",s,why})}
+  // FX (Sun 5 PM to Fri 5 PM)
+  {let s="open",why="Open 24 hours on weekdays";if(t.wd===6||(t.wd===0&&m<1020)||(t.wd===5&&m>=1020)){s="closed";why=t.wd===0?"Opens 5 PM Sunday":"Weekend · opens 5 PM Sunday"}
+   else if(t.iso.endsWith("-12-25")||t.iso.endsWith("-01-01")){s="limited";why="Holiday · very thin trading"}
+   out.push({id:"fx",e:"💱",n:"Currencies",s,why})}
+  out.push({id:"crypto",e:"🪙",n:"Crypto",s:"open",why:"Always open, 24/7"});
+  return out}
+const MKS={open:{e:"🟢",n:"Open"},limited:{e:"🟡",n:"Limited"},closed:{e:"🔴",n:"Closed"}};
+function mktPills(d){return marketStatus(d).map(x=>`<span class="mk-p mk-${x.s}" title="${x.n}: ${MKS[x.s].n}. ${x.why}"><i>${MKS[x.s].e}</i>${x.n}</span>`).join("")}
+function mktNote(d){const L=marketStatus(d),st=L.find(x=>x.id==="stocks"),bd=L.find(x=>x.id==="bonds");
+  if(st.s!==bd.s&&(st.s==="closed"||bd.s==="closed"))return`${st.s==="closed"?"Stocks closed":"Stocks open"}, ${bd.s==="closed"?"bonds closed":"bonds open"}: ${(st.s==="closed"?st:bd).why}`;
+  return st.why}
+
+const FOMC=[["2026-01-27","2026-01-28",0,0],["2026-03-17","2026-03-18",1,0],["2026-04-28","2026-04-29",0,0],["2026-06-16","2026-06-17",1,0],["2026-07-28","2026-07-29",0,0],["2026-09-15","2026-09-16",1,0],["2026-10-27","2026-10-28",0,0],["2026-12-08","2026-12-09",1,0], ["2027-01-26","2027-01-27",0,1],["2027-03-16","2027-03-17",1,1],["2027-04-27","2027-04-28",0,1],["2027-06-08","2027-06-09",1,1],["2027-07-27","2027-07-28",0,1],["2027-09-14","2027-09-15",1,1],["2027-10-26","2027-10-27",0,1],["2027-12-07","2027-12-08",1,1]];
+const MOODS=[[85,"🚀","Rocket"],[70,"🔥","Hot"],[57,"😎","Warming up"],[44,"😐","Flat"],[31,"🥶","Cooling"],[16,"📉","Sliding"],[0,"🧊","Frozen"]];
+const tier=s=>MOODS.find(t=>s>=t[0]);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const unsk=(id,txt)=>{const e=$(id);e.classList.remove("sk");e.textContent=txt};
+const t5=Math.floor(Date.now()/300000);
+const get=u=>fetch(u+"?t="+t5,{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null);
+const shortDate=iso=>new Date(iso+"T12:00:00Z").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",timeZone:"UTC"});
+const daysTo=iso=>Math.round((Date.parse(iso+"T12:00:00Z")-Date.parse(new Date().toLocaleDateString("en-CA",{timeZone:"America/New_York"})+"T12:00:00Z"))/864e5);
+const pct=v=>(v>0?"+":v<0?"−":"")+Math.abs(v).toFixed(2)+"%";
+function mkt(){$("mkt").innerHTML=mktPills();}
+mkt();setInterval(mkt,60000);
+const DESK={fx:"Currencies",crypto:"Crypto",commodities:"Commodities",stocks:"Index leaders",etfs:"ETF giants"};
+(async()=>{
+ const [B,S,I,T]=await Promise.all([get("/data.json"),get("/spread-desk/data.json"),get("/insurance/data.json"),get("/status/status.json")]);
+ // Market Vibes
+ if(B&&B.groups){
+  const desks=B.groups.map(g=>{const sc=(g.items||[]).map(i=>i.mood&&i.mood.score).filter(x=>x!=null);return{id:g.id,label:g.label||DESK[g.id],avg:sc.length?Math.round(sc.reduce((a,b)=>a+b,0)/sc.length):null,items:g.items||[]}}).filter(d=>d.avg!=null);
+  const allS=desks.flatMap(d=>d.items).map(i=>i.mood&&i.mood.score).filter(x=>x!=null),all=Math.round(allS.reduce((a,b)=>a+b,0)/allS.length),t=tier(all);
+  $("hEmo").textContent=t[1];$("hScore").textContent=all;$("hLabel").textContent="Overall market vibe · "+t[2];$("hPin").style.left=all+"%";
+  $("hUpd").textContent="Updated "+B.updated+" ET · refreshes every hour";
+  unsk("vScore",t[1]+" "+all);$("vTier").textContent=t[2];$("vTier").className=all>=57?"g":all>=44?"y":"r";
+  $("vDesks").innerHTML=desks.map(d=>`<span class="chip">${tier(d.avg)[1]} ${esc(d.label)} <b>${d.avg}</b></span>`).join("");
+  const items=desks.flatMap(d=>d.items).filter(i=>i.chg_pct!=null);
+  if(items.length){const up=items.reduce((a,b)=>b.chg_pct>a.chg_pct?b:a),dn=items.reduce((a,b)=>b.chg_pct<a.chg_pct?b:a);
+   $("vMove").innerHTML=`Biggest move this hour: <b>${esc(up.label)} ${pct(up.chg_pct)}</b> · <b>${esc(dn.label)} ${pct(dn.chg_pct)}</b>`;}
+ }else{$("hUpd").textContent="The live board is refreshing; try again in a minute.";}
+ // Index Insurance
+ if(I&&I.vix!=null){const v=I.vix,c=v>=20?["g","🟢 Rich"]:v>=12?["y","🟡 Fair"]:["r","🔴 Cheap"];unsk("iVix","VIX "+v.toFixed(1));$("iVixL").textContent=c[1];$("iVixL").className=c[0];}
+ else unsk("iVix","VIX –");
+ if(S&&S.trades&&S.trades.length){const p=S.trades.slice().sort((a,b)=>(a.rank??9)-(b.rank??9))[0],lv={green:"Chill",yellow:"Balanced",red:"Spicy"}[p.lv]||"";
+  $("iPlay").innerHTML=`Spotlight ${S.date===new Date().toLocaleDateString("en-CA",{timeZone:"America/New_York"})?"today":"("+shortDate(S.date)+")"}: <b>${esc(p.tk)} ${lv}</b> · collect $${p.collect} for $${p.risk} at risk · ${p.odds}% odds`;}
+ if(S&&S.weekly){const w=S.weekly;$("iWeek").innerHTML=w.sitOut?`Friday Play: <b>sitting out this week</b>`:`Friday Play for ${shortDate(w.friday)}: <b>posted</b>`+(w.mood?" · mood: "+w.mood.map(m=>m.emo+" "+esc(m.word)).join(", "):"");}
+ // KPI
+ if(I&&I.stocks){const L=s=>s.ivr>=.6?"g":s.ivr>=.3?"y":"r",n={g:0,y:0,r:0};I.stocks.forEach(s=>n[L(s)]++);
+  $("kMix").innerHTML=`<span class="chip">🟢 ${n.g} rich</span><span class="chip">🟡 ${n.y} fair</span><span class="chip">🔴 ${n.r} cheap</span>`;
+  const nx=I.stocks.filter(s=>s.earn&&daysTo(s.earn)>=0).sort((a,b)=>a.earn<b.earn?-1:1)[0];
+  $("kNext").innerHTML=nx?`Next earnings: <b>${esc(nx.sym)}</b> on ${shortDate(nx.earn)} (${daysTo(nx.earn)===0?"today":"in "+daysTo(nx.earn)+" days"})`:"No earnings dates in the next few weeks.";}
+ // Calendar
+ const today=new Date().toLocaleDateString("en-CA",{timeZone:"America/New_York"});
+ const closed=Object.entries(MKCAL.stockClosed).filter(([d])=>d>=today).sort()[0],early=Object.entries(MKCAL.stockEarly).filter(([d])=>d>=today).sort()[0];
+ const nextC=[closed&&{d:closed[0],t:`Closed: ${closed[1]}`},early&&{d:early[0],t:`Early close ${fmtHM(hm(early[1]))}`}].filter(Boolean).sort((a,b)=>a.d<b.d?-1:1)[0];
+ $("cClose").innerHTML=nextC?`Next: <b>${shortDate(nextC.d)}</b> · ${esc(nextC.t)}`:"";
+ const f=FOMC.find(x=>x[1]>=today);$("cFed").innerHTML=f?`Next Fed decision: <b>${shortDate(f[1])}</b>${f[3]?" (tentative)":""}`:"";
+ // Data Sources
+ if(T&&T.sources){const st=s=>s.state||(s.ok?"g":"r"),c={g:0,y:0,r:0};T.sources.forEach(s=>c[st(s)]++);
+  unsk("dCount",`${c.g}/${T.sources.length}`);$("dWord").textContent=c.r?`${c.r} need attention`:c.y?`${c.y} running late`:"All clear";$("dWord").className=c.r?"r":c.y?"y":"g";
+  $("dDots").innerHTML=T.sources.map(s=>`<i class="d${st(s)}" title="${esc(s.name)}"></i>`).join("");}
+ else unsk("dCount","–");
+})();
+</script>
 </body>
 </html>

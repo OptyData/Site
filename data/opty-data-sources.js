@@ -37,8 +37,9 @@ p{margin:0}a{color:var(--blue);text-decoration:none;font-weight:700}a:hover{text
 .foot{font-size:12.5px;color:var(--soft);text-align:center}
 .mute{color:var(--soft);font-size:13px}
 `;
-var P={vibes:{n:"Market Vibes",e:"\ud83c\udf9b\ufe0f",href:"https://www.optymystz.com/test"},ins:{n:"Index Insurance",e:"\ud83e\uddfe",href:"https://www.optymystz.com/stock-insurance"},
- kpi:{n:"KPI Tracker",e:"\ud83d\udcca",href:"https://www.optymystz.com/kpi-test"},cal:{n:"Market Calendar",e:"\ud83d\uddd3\ufe0f"}};
+var SITE=new URL("../",SRC).href;
+var P={vibes:{n:"Market Vibes",e:"\ud83c\udf9b\ufe0f",href:SITE+"vibes/"},ins:{n:"Index Insurance",e:"\ud83e\uddfe",href:SITE+"spread-desk/"},
+ kpi:{n:"KPI Tracker",e:"\ud83d\udcca",href:SITE+"kpi/"},cal:{n:"Market Calendar",e:"\ud83d\uddd3\ufe0f",href:SITE+"calendar/"}};
 var L={yahoo:"https://finance.yahoo.com",coingecko:"https://www.coingecko.com",ssga:"https://www.ssga.com",nasdaq:"https://www.nasdaq.com",alpaca:"https://alpaca.markets",cboe:"https://www.cboe.com",
  nyse:"https://www.nyse.com/markets/hours-calendars",sifma:"https://www.sifma.org/resources/general/holiday-schedule/",fed:"https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"};
 function a(k,t){return '<a href="'+L[k]+'" target="_blank" rel="noopener">'+t+'</a>'}
