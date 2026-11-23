@@ -18,7 +18,7 @@ class OptySpreadDesk extends HTMLElement{
  }
 }
 function run(HOST,R,DATA,INS,HR){
-(function(){var st=document.createElement("style");st.textContent=".sig{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 9px;width:fit-content;line-height:1.3}.hero .sig{background:rgba(255,255,255,.14)!important;color:#fff!important}";R.appendChild(st);})();
+(function(){var st=document.createElement("style");st.textContent=".sig{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 9px;width:fit-content;line-height:1.3}.hero .sig{background:rgba(255,255,255,.14)!important;color:#fff!important}.track{display:grid;gap:4px;font-size:14px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--tc);border-radius:12px;padding:9px 12px}.track b.pl{color:var(--tc);font-size:16px}.track .k{display:inline}";R.appendChild(st);})();
 
 /* ===== Insurance price + KPI tracker (shared by Index Insurance and KPI Tracker) ===== */
 const INSL = {g:{e:"\ud83d\udfe2",n:"Rich",d:"Insurance is expensive: options price in bigger moves than usual",c:"var(--g)",s:"var(--g-soft)"},
@@ -127,6 +127,19 @@ const legsHTML = t => `<div class="legs">${t.legs.map(l => `<span>${legLine(l)}<
 const dW = t => Math.abs((t.sc ?? 0) - (t.lc ?? 0)) || 5;
 const beOf = t => t.lc + t.limit;
 const maxP = t => Math.max(0, Math.round((dW(t) - t.limit) * 100));
+const inZone = t => t.kind === "call_debit" ? t.price > beOf(t) : t.kind === "iron_condor" ? t.price > t.lo && t.price < t.hi : t.price > t.lo;
+function trackHTML(t) {
+  const k = t.track; if (!k) return "";
+  const paid = t.limit, pl = Math.round((t.debit ? k.now - paid : paid - k.now) * 100);
+  const mp = t.debit ? maxP(t) : Math.round(paid * 100), share = mp > 0 ? Math.max(0, Math.min(100, Math.round(pl / mp * 100))) : 0;
+  const z = inZone(t), left = daysTo(t.expiry);
+  return `<div class="track num" style="--tc:${pl >= 0 ? "var(--g)" : "var(--r)"}">
+    <span>\ud83d\udce1 <b>Since Friday</b> \u00b7 ${t.debit ? "paid" : "collected"} $${paid.toFixed(2)}, worth $${k.now.toFixed(2)} now</span>
+    <span><b class="pl">${pl >= 0 ? "+" : "\u2212"}${usd(Math.abs(pl))}</b> per spread${pl > 0 ? ` \u00b7 ${share}% of the ${usd(mp)} max profit` : ""}</span>
+    <span>${z ? "\ud83d\udfe9 Inside" : "\ud83d\udfe5 Outside"} the profit zone: ${t.tk} ${t.price.toFixed(2)}${t.oddsNow != null ? ` \u00b7 \ud83c\udfaf ${t.oddsNow}% odds now` : ""} \u00b7 \u23f3 ${left > 0 ? left + "d left" : "ends today"}</span>
+    <span class="k">Tracks the Friday Play as posted, 1 spread \u00b7 updated ${when(k.asof)}</span>
+  </div>`;
+}
 const strategyName = t => t.kind === "iron_condor" ? "Iron condor" : t.kind === "call_debit" ? "Call debit spread" : "Put credit spread";
 /* hourly: same plays, newest prices and odds (from the server's :35 re-pricing) */
 const liveHR = () => HR && DATA && HR.date === DATA.date && Array.isArray(HR.plays) ? HR : null;
@@ -137,12 +150,19 @@ function sigHTML(t) {
   const S = SIG[p.signal], ch = p.odds_hour_chg != null ? ` \u00b7 ${pts(p.odds_hour_chg)} pts this hour` : p.odds_day_chg != null ? ` \u00b7 ${pts(p.odds_day_chg)} pts since posted` : "";
   return `<span class="sig" style="background:${S.s};color:${S.c}">${S.e} ${S.n}${ch}</span>`;
 }
-function live(t, H) {
+function live(t, H, keep) {
   const p = H && H.plays.find(x => x.id === t.id);
   if (!p) return t;
   const price = (H.funds[t.tk] || {}).price || t.price, o = {...t, sig: p, posted: t.asof, postedLimit: t.limit, postedOdds: t.odds, price};
   if (t.sp) o.roomDown = Math.round((1 - t.sp / price) * 1000) / 10;
   if (t.sc) o.roomUp = Math.round((t.sc / price - 1) * 1000) / 10;
+  if (keep) {
+    /* Friday play: it was posted Friday at a fixed price and runs to next Friday, so keep Friday's
+       numbers and track it ("since Friday") instead of re-pricing it as a new trade */
+    if (p.odds_now != null) o.oddsNow = Math.round(p.odds_now);
+    if (p.spread_now != null) o.track = {now: Math.abs(p.spread_now), asof: H.asof};
+    return o;
+  }
   if (p.odds_now != null) o.odds = Math.round(p.odds_now);
   /* prices only when every contract has a new quote, so the table always adds up */
   if (p.spread_now == null || !Array.isArray(p.legs_now) || p.legs_now.length !== t.legs.length || p.legs_now.some(v => v == null)) return o;
@@ -180,7 +200,7 @@ function render() {
   const w = d.weekly;
   if (w) {
     $("mood").innerHTML = w.mood.map(m => `<div><span class="e">${m.emo}</span><span><b>${m.name}</b><i><span class="dot" style="background:${DOT[m.c]}"></span>${m.word}</i></span></div>`).join("");
-    const t0 = w.trades[0], t = t0 && live({...t0, asof: w.asof || d.asof}, H);
+    const t0 = w.trades[0], t = t0 && live({...t0, asof: w.asof || d.asof, expiry: w.expiry}, H, true);
     if (w.sitOut || !t) {
       $("friday").innerHTML = `<span class="tag" style="background:var(--purple);color:#fff">\ud83d\uddd3\ufe0f Friday Play</span><h2>\ud83d\ude34 No spread this week</h2><p>The readings were too mixed. Back next Friday.</p>`;
     } else {
@@ -191,6 +211,7 @@ function render() {
         ${t.asof ? `<span class="k">\ud83d\udcb2 Prices ${t.priced ? "updated" : "collected"} ${when(t.asof)}</span>` : ""}
         ${sigHTML(t)}
         <p style="font-size:16px">\ud83d\udfe9 Profit zone: ${t.tk} ${winText(t)} on ${nice(w.expiry)}</p>
+        ${trackHTML(t)}
         ${legsHTML(t)}
         <div class="stats num">${t.debit ? `<span><span class="k">\ud83d\udcb8 Cost</span><b>${usd(t.risk)}</b></span><span><span class="k">\ud83d\udcb0 Max profit</span><b>${usd(maxP(t))}</b></span>` : `<span><span class="k">\ud83d\udcb5 Premium</span><b>${usd(t.collect)}</b></span><span><span class="k">\u26a0\ufe0f Risk</span><b>${usd(t.risk)}</b></span>`}${t.odds ? `<span><span class="k">\ud83c\udfaf Probability</span><b>${t.odds}%</b></span>` : ""}<span><span class="k">\u23f3 Left</span><b>${daysTo(w.expiry)}d</b></span></div>`;
     }
@@ -233,11 +254,12 @@ function open(id, opener) {
   const t = all.find(x => x.id === id); if (!t) return;
   const total = Math.max(1, Math.round((D(t.expiry) - D(t.start)) / 864e5)), left = daysTo(t.expiry);
   const room = t.kind === "iron_condor" ? `\ud83d\udccf It can drop ${t.roomDown}% or rise ${t.roomUp}% and still win.`
-    : t.kind === "call_debit" ? `\ud83d\ude80 ${t.tk} needs to rise ${Math.max(0, (beOf(t) / t.price - 1) * 100).toFixed(1)}% to $${beOf(t).toFixed(2)} to break even, and reach $${t.sc} for the full ${usd(maxP(t))}. At $${t.lc} or below you lose the ${usd(t.risk)} you paid. \ud83c\udfaf The Friday Playbook does not estimate odds for debit spreads.` : `\ud83d\udccf ${t.tk} can drop ${t.roomDown}% and this still wins.`;
+    : t.kind === "call_debit" ? `\ud83d\ude80 ${t.price >= beOf(t) ? `${t.tk} is ${((t.price / beOf(t) - 1) * 100).toFixed(1)}% above the $${beOf(t).toFixed(2)} break-even. It needs to stay above it,` : `${t.tk} needs to rise ${((beOf(t) / t.price - 1) * 100).toFixed(1)}% to $${beOf(t).toFixed(2)} to break even,`} and reach $${t.sc} for the full ${usd(maxP(t))}. At $${t.lc} or below you lose the ${usd(t.risk)} you paid. \ud83c\udfaf The Friday Playbook does not estimate odds for debit spreads.` : `\ud83d\udccf ${t.tk} can drop ${t.roomDown}% and this still wins.`;
   $("sbody").innerHTML = `<div style="display:grid;gap:12px">
     <span class="tag" style="background:${LV[t.lv].s};color:${LV[t.lv].c}">${LV[t.lv].e} ${LV[t.lv].n}${t.rank ? ` \u00b7 \u2b50 Top ${t.rank}` : ""}</span>
     <h2 id="sTitle">${t.tk} ${shape(t)}</h2>
     <p style="font-size:16px">\ud83d\udfe9 Profit zone: ${t.tk} ${winText(t)} on ${nice(t.expiry)}.</p>
+    ${trackHTML(t)}
     ${sigHTML(t)}${t.sig && t.sig.odds_now != null && t.postedOdds ? `<p style="color:var(--soft);font-size:14px">\ud83c\udfaf ${t.postedOdds}% when posted \u2192 ${t.odds}% now${t.sig.odds_prev != null ? ` (${Math.round(t.sig.odds_prev)}% an hour ago)` : ""}</p>` : ""}
     ${zone(t)}
     <p style="color:var(--soft)">\ud83d\udfe9 green = winning zone \u00b7 \ud83d\udfe5 red = losing zone</p>
