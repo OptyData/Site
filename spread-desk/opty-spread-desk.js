@@ -18,7 +18,7 @@ class OptySpreadDesk extends HTMLElement{
  }
 }
 function run(HOST,R,DATA,INS,HR){
-(function(){var st=document.createElement("style");st.textContent=".sig{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 9px;width:fit-content;line-height:1.3}.hero .sig{background:rgba(255,255,255,.14)!important;color:#fff!important}.track{display:grid;gap:4px;font-size:14px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--tc);border-radius:12px;padding:9px 12px}.track b.pl{color:var(--tc);font-size:16px}.track .k{display:inline}";R.appendChild(st);})();
+(function(){var st=document.createElement("style");st.textContent=".sig{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 9px;width:fit-content;line-height:1.3}.hero .sig{background:rgba(255,255,255,.14)!important;color:#fff!important}.track{display:grid;gap:4px;font-size:14px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--tc);border-radius:12px;padding:9px 12px}.track b.pl{color:var(--tc);font-size:16px}.track .k{display:inline}.fresh{display:inline-flex;align-items:center;gap:8px;font-weight:700;color:var(--ink);font-size:13.5px;line-height:1.3}.fresh i{flex:none;width:12px;height:12px;border-radius:50%;background:var(--fc);box-shadow:0 0 0 3px var(--fs)}.oldtag{background:var(--r-soft);color:var(--r)}.oldnote{font-size:13px;color:var(--soft)}";R.appendChild(st);})();
 
 /* ===== Insurance price + KPI tracker (shared by Index Insurance and KPI Tracker) ===== */
 const INSL = {g:{e:"\ud83d\udfe2",n:"Rich",d:"Insurance is expensive: options price in bigger moves than usual",c:"var(--g)",s:"var(--g-soft)"},
@@ -140,6 +140,27 @@ function trackHTML(t) {
     <span class="k">Tracks the Friday Play as posted, 1 spread \u00b7 updated ${when(k.asof)}</span>
   </div>`;
 }
+/* Friday play: price it from the freshest reading (hourly :35 job, or the 10:05 job's weekly.track), any day of its week */
+function weekSource(w, t0) {
+  const hp = HR && Array.isArray(HR.plays) ? HR.plays.find(x => x.id === t0.id && x.spread_now != null) : null;
+  const tr = w.track && w.track.spread_now != null ? w.track : null;
+  if (hp && (!tr || HR.asof >= tr.asof)) return HR;
+  if (tr) return {asof: tr.asof, funds: {[t0.tk]: {price: tr.price}}, plays: [{id: t0.id, spread_now: tr.spread_now, legs_now: tr.legs_now, odds_now: null}]};
+  return null;
+}
+const sinceDays = iso => Math.max(0, Math.round((D(todayET()) - D(iso)) / 864e5));
+function oldTag(w) {
+  const n = w.friday ? sinceDays(w.friday) : 0;
+  return n >= 1 && !w.preview ? `<span class="tag oldtag">\ud83d\udd34 Old play \u00b7 ${n} day${n === 1 ? "" : "s"} since the ${nice(w.friday).replace(/^\w+, /, "")} signal</span>` : "";
+}
+const OLDNOTE = `<p class="oldnote">\ud83d\udccc This is not a new play each day. We hold the original Friday play and update its price and P&L until the next Friday play posts.</p>`;
+function freshHTML(d) {
+  const today = todayET(), dow = D(today).getUTCDay(), ok = d.date === today, wk = dow === 0 || dow === 6;
+  const txt = ok ? `Today's plays are posted (${when(d.asof).split(" at ")[1]})`
+    : wk ? `Market closed today \u00b7 showing the ${nice(d.date)} plays`
+    : `Today's plays are not posted yet \u00b7 showing ${nice(d.date)} \u00b7 new plays post at 10:05 AM ET`;
+  return `<span class="fresh" style="--fc:${ok ? "var(--g)" : "var(--r)"};--fs:${ok ? "var(--g-soft)" : "var(--r-soft)"}"><i></i>${txt}</span>`;
+}
 const strategyName = t => t.kind === "iron_condor" ? "Iron condor" : t.kind === "call_debit" ? "Call debit spread" : "Put credit spread";
 /* hourly: same plays, newest prices and odds (from the server's :35 re-pricing) */
 const liveHR = () => HR && DATA && HR.date === DATA.date && Array.isArray(HR.plays) ? HR : null;
@@ -179,9 +200,9 @@ function render() {
   const P = H ? Object.fromEntries(Object.entries(d.prices).map(([k, v]) => [k, (H.funds[k] || {}).price || v])) : d.prices;
   $("date").textContent = "\ud83d\udcc5 " + nice(d.date);
   const priced = H && H.plays.some(x => Array.isArray(x.legs_now));
-  $("upd").innerHTML = H
+  $("upd").innerHTML = freshHTML(d) + "<br>" + (H
     ? `\ud83d\udcb2 ${priced ? "Prices" : "Odds"} updated ${when(H.asof)} \u00b7 plays posted ${when(d.asof).split(" at ")[1]} \u00b7 mid of bid and ask<br>\ud83d\udd52 Updated every hour at :35 \u00b7 \ud83d\udcc8 ${H.summary.better} better \u00b7 \u2796 ${H.summary.steady} steady \u00b7 \ud83d\udcc9 ${H.summary.worse} worse this hour`
-    : "\ud83d\udcb2 Prices collected " + when(d.asof) + " \u00b7 mid of bid and ask";
+    : "\ud83d\udcb2 Prices collected " + when(d.asof) + " \u00b7 mid of bid and ask");
   $("prices").innerHTML = Object.entries(P).map(([k, v]) => `<span class="px num">${k}<span>${v.toFixed(2)}</span></span>`).join("");
   $("expl").textContent = `\ud83d\udcc6 All expire ${nice(d.expiry)} \u00b7 \u23f3 ${daysTo(d.expiry)} days`;
   all = d.trades.map(t => live({...t, expiry: d.expiry, start: d.date, asof: d.asof}, H));
@@ -200,18 +221,19 @@ function render() {
   const w = d.weekly;
   if (w) {
     $("mood").innerHTML = w.mood.map(m => `<div><span class="e">${m.emo}</span><span><b>${m.name}</b><i><span class="dot" style="background:${DOT[m.c]}"></span>${m.word}</i></span></div>`).join("");
-    const t0 = w.trades[0], t = t0 && live({...t0, asof: w.asof || d.asof, expiry: w.expiry}, H, true);
+    const t0 = w.trades[0], t = t0 && live({...t0, asof: w.asof || d.asof, expiry: w.expiry}, weekSource(w, t0), true);
     if (w.sitOut || !t) {
       $("friday").innerHTML = `<span class="tag" style="background:var(--purple);color:#fff">\ud83d\uddd3\ufe0f Friday Play</span><h2>\ud83d\ude34 No spread this week</h2><p>The readings were too mixed. Back next Friday.</p>`;
     } else {
-      all.push({...t, lv: "weekly", expiry: w.expiry, start: w.friday});
+      all.push({...t, lv: "weekly", expiry: w.expiry, start: w.friday, oldTag: oldTag(w)});
       $("friday").dataset.id = t.id;
-      $("friday").innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap"><span class="tag" style="background:var(--purple);color:#fff">\ud83d\uddd3\ufe0f Friday Play</span>${w.preview ? `<span class="tag" style="background:#fff;border:1px solid #d8cffc;color:var(--purple)">\ud83d\udc40 Preview</span>` : ""}</div>
+      $("friday").innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap"><span class="tag" style="background:var(--purple);color:#fff">\ud83d\uddd3\ufe0f Friday Play</span>${w.preview ? `<span class="tag" style="background:#fff;border:1px solid #d8cffc;color:var(--purple)">\ud83d\udc40 Preview</span>` : ""}${oldTag(w)}</div>
         <h2>${t.tk} ${shape(t)}</h2>
         ${t.asof ? `<span class="k">\ud83d\udcb2 Prices ${t.priced ? "updated" : "collected"} ${when(t.asof)}</span>` : ""}
         ${sigHTML(t)}
         <p style="font-size:16px">\ud83d\udfe9 Profit zone: ${t.tk} ${winText(t)} on ${nice(w.expiry)}</p>
         ${trackHTML(t)}
+        ${oldTag(w) ? OLDNOTE : ""}
         ${legsHTML(t)}
         <div class="stats num">${t.debit ? `<span><span class="k">\ud83d\udcb8 Cost</span><b>${usd(t.risk)}</b></span><span><span class="k">\ud83d\udcb0 Max profit</span><b>${usd(maxP(t))}</b></span>` : `<span><span class="k">\ud83d\udcb5 Premium</span><b>${usd(t.collect)}</b></span><span><span class="k">\u26a0\ufe0f Risk</span><b>${usd(t.risk)}</b></span>`}${t.odds ? `<span><span class="k">\ud83c\udfaf Probability</span><b>${t.odds}%</b></span>` : ""}<span><span class="k">\u23f3 Left</span><b>${daysTo(w.expiry)}d</b></span></div>`;
     }
@@ -256,10 +278,11 @@ function open(id, opener) {
   const room = t.kind === "iron_condor" ? `\ud83d\udccf It can drop ${t.roomDown}% or rise ${t.roomUp}% and still win.`
     : t.kind === "call_debit" ? `\ud83d\ude80 ${t.price >= beOf(t) ? `${t.tk} is ${((t.price / beOf(t) - 1) * 100).toFixed(1)}% above the $${beOf(t).toFixed(2)} break-even. It needs to stay above it,` : `${t.tk} needs to rise ${((beOf(t) / t.price - 1) * 100).toFixed(1)}% to $${beOf(t).toFixed(2)} to break even,`} and reach $${t.sc} for the full ${usd(maxP(t))}. At $${t.lc} or below you lose the ${usd(t.risk)} you paid. \ud83c\udfaf The Friday Playbook does not estimate odds for debit spreads.` : `\ud83d\udccf ${t.tk} can drop ${t.roomDown}% and this still wins.`;
   $("sbody").innerHTML = `<div style="display:grid;gap:12px">
-    <span class="tag" style="background:${LV[t.lv].s};color:${LV[t.lv].c}">${LV[t.lv].e} ${LV[t.lv].n}${t.rank ? ` \u00b7 \u2b50 Top ${t.rank}` : ""}</span>
+    <span class="tag" style="background:${LV[t.lv].s};color:${LV[t.lv].c}">${LV[t.lv].e} ${LV[t.lv].n}${t.rank ? ` \u00b7 \u2b50 Top ${t.rank}` : ""}</span>${t.oldTag || ""}
     <h2 id="sTitle">${t.tk} ${shape(t)}</h2>
     <p style="font-size:16px">\ud83d\udfe9 Profit zone: ${t.tk} ${winText(t)} on ${nice(t.expiry)}.</p>
     ${trackHTML(t)}
+    ${t.oldTag ? OLDNOTE : ""}
     ${sigHTML(t)}${t.sig && t.sig.odds_now != null && t.postedOdds ? `<p style="color:var(--soft);font-size:14px">\ud83c\udfaf ${t.postedOdds}% when posted \u2192 ${t.odds}% now${t.sig.odds_prev != null ? ` (${Math.round(t.sig.odds_prev)}% an hour ago)` : ""}</p>` : ""}
     ${zone(t)}
     <p style="color:var(--soft)">\ud83d\udfe9 green = winning zone \u00b7 \ud83d\udfe5 red = losing zone</p>
@@ -301,7 +324,7 @@ function openStock(sym, opener) {
 }
 bindIns(R.getElementById("insSec"), openStock);
 renderIns();
-if (DATA) setInterval(() => j(HOURLY_URL).then(h => { if (h && (!HR || h.asof !== HR.asof)) { HR = h; render(); } }).catch(() => {}), 300000);
+if (DATA) setInterval(() => Promise.all([j(DATA_URL).catch(() => null), j(HOURLY_URL).catch(() => null)]).then(([nd, h]) => { let ch = false; if (nd && nd.asof && nd.asof !== DATA.asof) { DATA = nd; ch = true; } if (h && (!HR || h.asof !== HR.asof)) { HR = h; ch = true; } if (ch) render(); }), 300000);
 if (DATA) render(); else R.getElementById("date").textContent = "\ud83d\udced Today's plays post at about 10:05 AM ET";
 
 }
